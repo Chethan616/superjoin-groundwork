@@ -4,3 +4,5 @@ export interface BadgeProps {
   icon?: React.ReactNode;
   children?: React.ReactNode;
 }
+
+export function Badge(props: BadgeProps): JSX.Element;

@@ -8,3 +8,5 @@ export interface CardProps {
   interactive?: boolean;
   style?: React.CSSProperties;
 }
+
+export function Card(props: CardProps): JSX.Element;

@@ -12,3 +12,5 @@ export interface ButtonProps {
   onClick?: () => void;
   style?: React.CSSProperties;
 }
+
+export function Button(props: ButtonProps): JSX.Element;

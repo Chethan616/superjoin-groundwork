@@ -24,6 +24,9 @@ apps/web/out/
 
 # db / misc
 infra/db/data/
+services/core/data/
+scripts/eval/synthetic/
 *.log
 .DS_Store
 Thumbs.db
+apps/web/tsconfig.tsbuildinfo
