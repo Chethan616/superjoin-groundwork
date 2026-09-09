@@ -15,9 +15,12 @@ const Citation = z.object({
   marker: z.string(), // token that appears inline in AnswerText.text, e.g. "1"
   fact_id: z.string().uuid().optional(),
   evidence_id: z.string().uuid().optional(),
-  document_id: z.string().uuid(),
-  page: z.number().int().positive(),
-  label: z.string(), // e.g. "Annual Report · p.47"
+  // A citation pointing at a relationship rather than a specific piece of
+  // evidence legitimately has no single document/page — tolerate null/
+  // missing rather than reject an otherwise well-formed plan over it.
+  document_id: z.string().uuid().nullable().optional(),
+  page: z.number().int().positive().nullable().optional(),
+  label: z.string().nullable().optional().default(''), // e.g. "Annual Report · p.47"
 });
 export type Citation = z.infer<typeof Citation>;
 

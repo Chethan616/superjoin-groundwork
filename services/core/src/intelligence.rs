@@ -211,6 +211,9 @@ pub struct AnswerPlanRequest {
     pub question: String,
     pub retrieved_facts: Vec<Json>,
     pub retrieved_chunks: Vec<Json>,
+    pub provider: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
 }
 #[derive(Deserialize, Debug)]
 pub struct AnswerPlanResponse {

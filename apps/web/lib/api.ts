@@ -215,11 +215,13 @@ export function getEntity(id: string): Promise<Entity> {
 
 // ---- Query (generative UI) ----
 
+export type LLMProvider = 'groq' | 'gemini';
+
 /** Returns the raw answer-plan JSON — always validate with parseAnswerPlan() before rendering. */
-export function query(question: string): Promise<unknown> {
+export function query(question: string, provider: LLMProvider = 'groq'): Promise<unknown> {
   return request<unknown>('/query', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, provider }),
   });
 }

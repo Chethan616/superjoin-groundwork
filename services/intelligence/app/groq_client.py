@@ -13,6 +13,7 @@ from typing import Any, Optional
 from groq import BadRequestError, Groq, RateLimitError
 
 from app.config import get_settings
+from app.llm_errors import LLMCallError
 
 logger = logging.getLogger("groundwork.groq")
 
@@ -26,13 +27,11 @@ logger = logging.getLogger("groundwork.groq")
 MAX_RATE_LIMIT_WAIT_SECONDS = 20
 
 
-class GroqCallError(Exception):
-    """Raised when a Groq call fails outright (rate limit, auth, network,
-    or two consecutive invalid-JSON responses) — callers must not confuse
-    this with "the model legitimately found nothing," which is a normal {}
-    -like empty result, not an error. Distinguishing the two matters: a
-    document silently getting zero facts because of a rate limit must show
-    up as a visible processing error, not a quiet "done, 0 facts" job."""
+# Kept as a name for backwards compatibility with existing imports — Groq's
+# specific errors all raise the shared LLMCallError so callers that want to
+# handle "any provider failed" in one place (e.g. /answer/plan, which can
+# be routed to Groq or Gemini) can catch just LLMCallError.
+GroqCallError = LLMCallError
 
 
 @lru_cache

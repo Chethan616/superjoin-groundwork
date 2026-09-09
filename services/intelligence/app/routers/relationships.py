@@ -69,7 +69,10 @@ def reason_relationship(req: ReasonRelationshipRequest) -> ReasonRelationshipRes
     # rate-limit/network failure masquerade as a genuine model judgment.
     # Propagating the error lets Rust's pipeline fail the reason_relationships
     # job visibly instead.
-    raw = call_json(_SYSTEM, user_msg, temperature=0.15, max_tokens=1200, reasoning_effort="low")
+    # Kept conservative: some Groq models enforce a low output-tokens-per-
+    # minute ceiling (observed: qwen3.8-27b caps at 1000 OTPM) independent of
+    # the daily/TPM budget used elsewhere.
+    raw = call_json(_SYSTEM, user_msg, temperature=0.15, max_tokens=900, reasoning_effort="low")
 
     valid_types = {
         "CORROBORATES", "CONTRADICTS", "POTENTIAL_CONTRADICTION",

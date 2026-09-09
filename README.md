@@ -156,7 +156,7 @@ PostgreSQL+pgvector is the system of record because this is fundamentally relati
 
 ## AI Tools Used
 
-Built with Claude Code (Anthropic) as the primary coding agent, using Groq-hosted open models (`openai/gpt-oss-20b`/`120b`) as the in-product LLM for fact extraction, entity resolution, relationship reasoning, and answer planning. Local `sentence-transformers` embeddings — no embedding API.
+Built with Claude Code (Anthropic) as the primary coding agent. In-product LLM work runs on Groq-hosted open models (`openai/gpt-oss-20b`/`120b`) for fact extraction, entity resolution, and relationship reasoning during ingestion. The chat composer additionally has a **Groq / Gemini** picker for interactive answer-planning (`/query`) — both providers go through the same schema-validated generative-UI contract (`services/intelligence/app/llm_router.py` dispatches to `groq_client.py` or `gemini_client.py`, both verified against their real APIs, not assumed). Local `sentence-transformers` embeddings — no embedding API.
 
 ## Limitations and Next Steps
 

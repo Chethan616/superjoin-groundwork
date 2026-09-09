@@ -14,7 +14,7 @@
 import React from 'react';
 import AppShell from '../components/shell/AppShell';
 import { AnswerRenderer } from '../components/answer/AnswerRenderer';
-import { query, type ApiError } from '../lib/api';
+import { query, type ApiError, type LLMProvider } from '../lib/api';
 
 interface Message {
   id: string;
@@ -205,8 +205,27 @@ export default function ChatPage() {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
+  const [provider, setProvider] = React.useState<LLMProvider>('groq');
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  // Remember the model choice per-browser (not per-account — there's no
+  // server-side user concept here) so it survives a reload.
+  React.useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('gw-provider');
+      if (saved === 'groq' || saved === 'gemini') setProvider(saved);
+    } catch {
+      // localStorage unavailable (private mode, etc.) — just use the default.
+    }
+  }, []);
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem('gw-provider', provider);
+    } catch {
+      // ignore
+    }
+  }, [provider]);
 
   // Listen for example question clicks from EmptyState
   React.useEffect(() => {
@@ -233,7 +252,7 @@ export default function ChatPage() {
     setLoading(true);
 
     try {
-      const plan = await query(question);
+      const plan = await query(question, provider);
       setMessages((prev) => [...prev, { id: crypto.randomUUID(), kind: 'answer', plan }]);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Something went wrong.';
@@ -309,6 +328,29 @@ export default function ChatPage() {
               (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--line-strong)';
             }}
           >
+            <select
+              id="model-provider-select"
+              value={provider}
+              onChange={(e) => setProvider(e.target.value as LLMProvider)}
+              disabled={loading}
+              title="Model provider"
+              style={{
+                alignSelf: 'flex-end',
+                background: 'var(--surface-raised)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--r-pill)',
+                color: 'var(--ink-2)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11.5,
+                padding: '7px 10px',
+                cursor: loading ? 'default' : 'pointer',
+                outline: 'none',
+                flexShrink: 0,
+              }}
+            >
+              <option value="groq">Groq</option>
+              <option value="gemini">Gemini</option>
+            </select>
             <textarea
               ref={textareaRef}
               id="chat-input"

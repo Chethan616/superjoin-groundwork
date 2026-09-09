@@ -101,17 +101,21 @@ function ConfidencePip({ value }: { value: number }) {
 // click handler to this app's context panel (open the source PDF page).
 function CitationChip({ marker, documentId, page, label }: {
   marker: string;
-  documentId: string;
-  page: number;
+  documentId?: string | null;
+  page?: number | null;
   label: string;
 }) {
   const { openDocument } = useContextPanel();
+  // A citation can legitimately point at a relationship rather than a single
+  // page of evidence (e.g. "these two facts contradict each other") — it
+  // still renders as a marker, it just isn't clickable-to-a-page.
+  const clickable = Boolean(documentId && page);
   return (
     <DesignCitationChip
       marker={marker.replace(/[[\]]/g, '')}
       label={label}
-      onClick={() => openDocument(documentId, label, page, label)}
-      style={{ verticalAlign: 'super', fontSize: 11 }}
+      onClick={clickable ? () => openDocument(documentId as string, label, page as number, label) : undefined}
+      style={{ verticalAlign: 'super', fontSize: 11, cursor: clickable ? 'pointer' : 'default', opacity: clickable ? 1 : 0.75 }}
     />
   );
 }
@@ -133,7 +137,7 @@ function AnswerTextComponent({ c }: { c: Extract<UIComponent, { type: 'AnswerTex
               marker={part}
               documentId={cit.document_id}
               page={cit.page}
-              label={cit.label}
+              label={cit.label || (cit.page ? `Document · p.${cit.page}` : 'Related')}
             />
           );
         }

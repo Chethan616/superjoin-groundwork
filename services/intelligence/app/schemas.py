@@ -170,6 +170,10 @@ class AnswerPlanRequest(BaseModel):
     question: str
     retrieved_facts: list[dict[str, Any]]
     retrieved_chunks: list[dict[str, Any]]
+    # User-selectable from the composer's model picker. Defaults preserve
+    # existing behavior for any caller that doesn't send these.
+    provider: Literal["groq", "gemini"] = "groq"
+    model: Optional[str] = None
 
 
 class AnswerPlanResponse(BaseModel):
@@ -184,9 +188,13 @@ class Citation(BaseModel):
     marker: str
     fact_id: Optional[str] = None
     evidence_id: Optional[str] = None
-    document_id: str
-    page: int
-    label: str
+    # A citation pointing at a relationship rather than a specific piece of
+    # evidence legitimately has no single document/page (observed live:
+    # Gemini cited a cross-document contradiction this way) — tolerate that
+    # instead of discarding an otherwise well-formed, evidence-grounded plan.
+    document_id: Optional[str] = None
+    page: Optional[int] = None
+    label: Optional[str] = ""
 
 
 class AnswerTextComponent(BaseModel):

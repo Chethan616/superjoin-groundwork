@@ -10,7 +10,9 @@ import logging
 
 from fastapi import APIRouter
 
-from app.groq_client import GroqCallError, call_json
+from app.config import get_settings
+from app.llm_errors import LLMCallError
+from app.llm_router import call_json
 from app.schemas import AnswerPlanRequest, AnswerPlanResponse, safe_answer_plan
 
 logger = logging.getLogger("groundwork.answer")
@@ -66,12 +68,22 @@ def answer_plan(req: AnswerPlanRequest) -> AnswerPlanResponse:
         f"Retrieved chunks (raw text snippets):\n{chunks_json}"
     )
 
+    # Some Groq models enforce a low output-tokens-per-minute ceiling
+    # independent of their daily budget (observed: qwen3.8-27b caps at 1000
+    # OTPM) — 3000 blew straight through that and turned into a user-visible
+    # "couldn't generate an answer" every time that model was active. Gemini
+    # doesn't share that constraint, so it gets more headroom.
+    max_tokens = 3000 if req.provider == "gemini" else 900
+    # Use the caller's explicit model if given; otherwise pick a per-provider
+    # default suited to this specific call (see groq_answer_model's comment).
+    model = req.model or (get_settings().groq_answer_model if req.provider == "groq" else None)
     try:
-        # Answer planning happens once per query (not once per chunk), so it
-        # can afford more reasoning than the high-volume extraction calls.
-        raw = call_json(_SYSTEM, user_msg, temperature=0.3, max_tokens=3000, reasoning_effort="medium")
-    except GroqCallError as exc:
-        logger.error("Answer planning call failed: %s", exc)
+        raw = call_json(
+            _SYSTEM, user_msg, provider=req.provider, model=model,
+            temperature=0.3, max_tokens=max_tokens, reasoning_effort="low",
+        )
+    except LLMCallError as exc:
+        logger.error("Answer planning call failed (%s): %s", req.provider, exc)
         raw = {
             "components": [
                 {
@@ -85,5 +97,10 @@ def answer_plan(req: AnswerPlanRequest) -> AnswerPlanResponse:
     # safe_answer_plan validates against the full UIComponent discriminated union
     # and falls back to an UncertaintyCard rather than returning malformed output.
     validated = safe_answer_plan(raw)
+    if validated["components"][0].get("type") == "UncertaintyCard" and raw.get("components"):
+        # The model DID produce something, it just didn't validate — log the
+        # raw shape (not just "discarded") so this is debuggable instead of
+        # a silent, unexplained fallback every time.
+        logger.warning("answer plan failed schema validation, raw=%s", json.dumps(raw)[:2000])
 
     return AnswerPlanResponse(plan=validated)
